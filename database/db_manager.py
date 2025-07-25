@@ -59,6 +59,58 @@ class DBManager:
             """, (f"%{keyword}%",))
             return cur.fetchall()
 
+    def insert_employer(self, employer_data: dict) -> None:
+        """Добавляет работодателя в БД"""
+        with self.conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO employers (employer_id, name, url, open_vacancies)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (employer_id) DO NOTHING
+                """,
+                (
+                    employer_data["id"],
+                    employer_data["name"],
+                    employer_data["alternate_url"],
+                    employer_data["open_vacancies"]
+                )
+            )
+            self.conn.commit()
+
+    def insert_vacancy(self, vacancy_data: dict, employer_id: str) -> None:
+        """Добавляет вакансию в БД"""
+        with self.conn.cursor() as cur:
+            salary = vacancy_data.get("salary")
+            salary_from = salary.get("from") if salary else None
+            salary_to = salary.get("to") if salary else None
+            currency = salary.get("currency") if salary else None
+
+            cur.execute(
+                """
+                INSERT INTO vacancies (
+                    vacancy_id, 
+                    employer_id, 
+                    title, 
+                    salary_from, 
+                    salary_to, 
+                    currency, 
+                    url
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (vacancy_id) DO NOTHING
+                """,
+                (
+                    vacancy_data["id"],
+                    employer_id,
+                    vacancy_data["name"],
+                    salary_from,
+                    salary_to,
+                    currency,
+                    vacancy_data["alternate_url"]
+                )
+            )
+            self.conn.commit()
+
     def close(self) -> None:
         """Закрывает соединение с БД."""
         self.conn.close()
